@@ -1,0 +1,2 @@
+state,trend_velocity,distress_mentions,substance_mentions,opioid_misuse_pct,social_composite,trends_interest,poverty_rate_pct,overdose_rate_per_100k,ews_mortality,ews_substance,ews_social,ews_trends,ews_socioeconomic,ews,ews_alert_level
+KS,0.3333333333333333,0.0,0.0,4.0,0.0,39.79874213836478,11.523906119151173,126.0,0.4133,0.2222,0.0,0.398,0.5238,0.2979,LOW

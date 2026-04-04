@@ -1,0 +1,17 @@
+source,target,timestamp,weight,relation
+KS,KS_overdose,2025-05-01,1.0,has_event
+KS,KS_ews,2025-05-01,0.984,has_risk
+KS,KS_income,2025-05-01,0.526,has_context
+KS,KS_nida,2025-05-01,0.51,has_context
+KS,KS_trends,2025-05-01,0.398,has_trend
+KS_income,KS_ews,2025-05-01,0.079,influences
+KS_nida,KS_ews,2025-05-01,0.127,influences
+KS_trends,KS_ews,2025-05-01,0.04,influences
+KS,KS_overdose,2025-06-01,1.0,has_event
+KS,KS_ews,2025-06-01,1.0,has_risk
+KS,KS_income,2025-06-01,0.526,has_context
+KS,KS_nida,2025-06-01,0.51,has_context
+KS,KS_trends,2025-06-01,0.398,has_trend
+KS_income,KS_ews,2025-06-01,0.079,influences
+KS_nida,KS_ews,2025-06-01,0.127,influences
+KS_trends,KS_ews,2025-06-01,0.04,influences

@@ -1,0 +1,20 @@
+{
+  "title": "DMARG Risk Brief \u2013 KS",
+  "summary": "KS shows low addiction/overdose risk based on multimodal signals (public health, social, search trends, and socioeconomic context).",
+  "bullets": [
+    "Overall alert level: LOW (score=0.298).",
+    "Mortality domain: 0.413.",
+    "Substance domain: 0.222.",
+    "Social domain: 0.000.",
+    "Trends domain: 0.398.",
+    "Socioeconomic domain: 0.524.",
+    "Data coverage confidence: 0.61 (higher is better).",
+    "Near-term forecast indicates ~124.8 units in the last horizon step.",
+    "Detected 1 anomaly spike(s) in the recent trend window."
+  ],
+  "caveats": [
+    "EWS is a screening score, not a clinical diagnosis.",
+    "Social and search signals may be noisy and rate-limited.",
+    "API datasets are provisional; interpret trends with caution."
+  ]
+}

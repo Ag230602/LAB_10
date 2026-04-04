@@ -1,0 +1,9 @@
+source,target,relation,weight
+CA,CA_overdose,has_event,1.0
+CA,CA_ews,has_risk,0.301
+CA,CA_income,has_context,0.263
+CA,CA_nida,has_context,0.6
+CA,CA_trends,has_trend,0.397
+CA_income,CA_ews,influences,0.039
+CA_nida,CA_ews,influences,0.15
+CA_trends,CA_ews,influences,0.04

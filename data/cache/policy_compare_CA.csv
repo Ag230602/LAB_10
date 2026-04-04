@@ -1,0 +1,6 @@
+intervention,lives_saved_mean,lives_saved_lower,lives_saved_upper,cost_per_year_m,evidence_level,cost_per_life_saved_k
+Naloxone Distribution,1396938.9,802201.6,2015516.9,8.5,HIGH,0.0
+Treatment Expansion (MAT/MOUD),997469.0,393720.4,1655880.3,45.0,HIGH,0.0
+Harm Reduction Programs,783031.9,203254.9,1393606.7,12.0,MODERATE,0.0
+Law Enforcement (Supply Disruption),632005.0,-92498.3,1463699.5,30.0,LOW,0.0
+Prevention & Education,50070.6,-290040.6,388318.2,5.0,MODERATE,0.1

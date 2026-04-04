@@ -1,0 +1,7 @@
+node,node_type,label,risk_score,color
+CA,location,CA,0.3011,#4e79a7
+CA_overdose,event,Overdose Deaths,1.0,#76b7b2
+CA_ews,risk_score,EWS,0.3011,#e15759
+CA_income,demographic,Median Income,0.263,#9c755f
+CA_nida,context,NIDA/SAMHSA,0.6,#59a14f
+CA_trends,trend,Search Trends,0.397,#b07aa1

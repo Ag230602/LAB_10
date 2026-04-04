@@ -1,0 +1,2 @@
+state,fusion_score,alert_level,confidence,domain_cdc,domain_nida,domain_trends,domain_census
+CA,0.3246,MODERATE,0.611,0.2063,0.4994,0.3638,0.263

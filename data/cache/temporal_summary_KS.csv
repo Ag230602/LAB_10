@@ -1,0 +1,3 @@
+timestamp,n_nodes,n_edges,density,mean_ews,max_ews,mean_risk_score,state
+2025-05-01,6,8,0.2667,0.9841,0.9841,0.6084,KS
+2025-06-01,6,8,0.2667,1.0,1.0,0.6143,KS
