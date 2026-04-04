@@ -1,9 +1,7 @@
 source,target,relation,weight
 KS,KS_overdose,has_event,1.0
-KS,KS_ews,has_risk,0.298
+KS,KS_ews,has_risk,0.258
 KS,KS_income,has_context,0.526
 KS,KS_nida,has_context,0.51
-KS,KS_trends,has_trend,0.398
 KS_income,KS_ews,influences,0.079
 KS_nida,KS_ews,influences,0.127
-KS_trends,KS_ews,influences,0.04

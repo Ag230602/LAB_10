@@ -27,18 +27,29 @@ class RedditAPIClient:
                 user_agent=settings.reddit_user_agent,
             )
 
-    def search_posts(self, query: str, subreddit: str = "all", limit: int = 50) -> pd.DataFrame:
+    def search_posts(
+        self,
+        query: str,
+        subreddit: str = "all",
+        limit: int = 50,
+        include_post_id: bool = False,
+    ) -> pd.DataFrame:
         if not self.enabled or self.reddit is None:
-            return pd.DataFrame(columns=["id", "subreddit", "title", "selftext", "created_utc", "score"])
+            cols = ["subreddit", "title", "selftext", "created_utc", "score"]
+            if include_post_id:
+                cols.insert(0, "id")
+            return pd.DataFrame(columns=cols)
 
         rows: List[dict] = []
         for post in self.reddit.subreddit(subreddit).search(query, limit=limit, sort="new"):
-            rows.append({
-                "id": post.id,
+            row = {
                 "subreddit": str(post.subreddit),
                 "title": post.title,
                 "selftext": getattr(post, "selftext", ""),
                 "created_utc": post.created_utc,
                 "score": post.score,
-            })
+            }
+            if include_post_id:
+                row["id"] = post.id
+            rows.append(row)
         return pd.DataFrame(rows)

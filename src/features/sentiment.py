@@ -151,6 +151,7 @@ def analyze_dataframe(
     df: pd.DataFrame,
     text_col: str,
     prefix: str = "",
+    include_matches: bool = False,
 ) -> pd.DataFrame:
     """
     Applies *analyze()* to every row of a DataFrame and appends result columns.
@@ -169,6 +170,13 @@ def analyze_dataframe(
     out[col.format("urgency_score")]   = results.apply(lambda r: r.urgency_score)
     out[col.format("composite_risk")]  = results.apply(lambda r: r.composite_risk)
     out[col.format("n_tokens")]        = results.apply(lambda r: r.n_tokens)
+
+    if include_matches:
+        # Store matched lexicon terms as a lightweight evidence trail.
+        # Avoids raw text persistence while still supporting explainability.
+        out[col.format("matched_substance_terms")] = results.apply(lambda r: ", ".join(r.matched_substance_terms))
+        out[col.format("matched_distress_terms")] = results.apply(lambda r: ", ".join(r.matched_distress_terms))
+        out[col.format("matched_urgency_terms")] = results.apply(lambda r: ", ".join(r.matched_urgency_terms))
     return out
 
 

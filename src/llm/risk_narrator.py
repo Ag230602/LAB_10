@@ -60,6 +60,36 @@ def generate_template_narrative(
         if n_spikes > 0:
             bullets.append(f"Detected {n_spikes} anomaly spike(s) in the recent trend window.")
 
+    # Optional semantic (embedding-style) social score
+    if "semantic_social_composite" in ews_row:
+        try:
+            sem = float(ews_row.get("semantic_social_composite", 0.0) or 0.0)
+            if sem > 0:
+                bullets.append(f"Semantic social risk signal (embedding-style): {sem:.3f} (0–1).")
+        except Exception:
+            pass
+
+    # Optional video-derived behavioral signals (non-identifying)
+    vid_keys = [
+        "video_activity_mean",
+        "video_anomaly_score",
+        "video_low_light_frac",
+        "video_scene_change_rate",
+    ]
+    if any(k in ews_row for k in vid_keys):
+        try:
+            v_activity = float(ews_row.get("video_activity_mean", 0.0) or 0.0)
+            v_anom = float(ews_row.get("video_anomaly_score", 0.0) or 0.0)
+            v_dark = float(ews_row.get("video_low_light_frac", 0.0) or 0.0)
+            v_scene = float(ews_row.get("video_scene_change_rate", 0.0) or 0.0)
+            if max(v_activity, v_anom, v_dark, v_scene) > 0:
+                bullets.append(
+                    "Video-derived behavioral signals added "
+                    f"(activity={v_activity:.3f}, anomaly={v_anom:.3f}, low_light={v_dark:.3f}, scene_change={v_scene:.3f})."
+                )
+        except Exception:
+            pass
+
     summary = (
         f"{state} shows {alert.lower()} addiction/overdose risk based on multimodal signals "
         f"(public health, social, search trends, and socioeconomic context)."

@@ -44,6 +44,16 @@ REFERENCE_RANGES: Dict[str, Tuple[float, float]] = {
     "distress_score":              (0.0,   0.5),
     "urgency_score":               (0.0,   0.3),
     "composite_risk":              (0.0,   1.0),
+    # Semantic / embedding-style text signals
+    "semantic_substance_score":     (0.0,   1.0),
+    "semantic_distress_score":      (0.0,   1.0),
+    "semantic_help_seeking_score":  (0.0,   1.0),
+    "semantic_composite_risk":      (0.0,   1.0),
+    # Video behavioral signals (optional)
+    "video_activity_mean":          (0.0,   1.0),
+    "video_anomaly_score":          (0.0,   1.0),
+    "video_low_light_frac":         (0.0,   1.0),
+    "video_scene_change_rate":      (0.0,   2.0),
     # Google Trends signals
     "trends_opioid_mean":          (0.0,  100.0),
     "trends_stimulant_mean":       (0.0,  100.0),
@@ -55,6 +65,7 @@ DOMAIN_WEIGHTS: Dict[str, float] = {
     "cdc":     0.35,
     "nida":    0.25,
     "social":  0.20,
+    "video":   0.10,
     "trends":  0.10,
     "census":  0.10,
 }
@@ -76,6 +87,14 @@ SIGNAL_DOMAIN: Dict[str, str] = {
     "distress_score":            "social",
     "urgency_score":             "social",
     "composite_risk":            "social",
+    "semantic_substance_score":   "social",
+    "semantic_distress_score":    "social",
+    "semantic_help_seeking_score": "social",
+    "semantic_composite_risk":    "social",
+    "video_activity_mean":        "video",
+    "video_anomaly_score":        "video",
+    "video_low_light_frac":       "video",
+    "video_scene_change_rate":    "video",
     "trends_opioid_mean":        "trends",
     "trends_stimulant_mean":     "trends",
     "trends_treatment_mean":     "trends",
@@ -216,6 +235,14 @@ def build_signal_dict(
                 sigs[col] = float(
                     pd.to_numeric(reddit_df[col], errors="coerce").mean()
                 )
+        for col in [
+            "semantic_substance_score",
+            "semantic_distress_score",
+            "semantic_help_seeking_score",
+            "semantic_composite_risk",
+        ]:
+            if col in reddit_df.columns:
+                sigs[col] = float(pd.to_numeric(reddit_df[col], errors="coerce").mean())
 
     # Google Trends signals
     if trends_df is not None and not trends_df.empty:

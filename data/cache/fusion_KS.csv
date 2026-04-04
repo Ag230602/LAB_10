@@ -1,2 +1,2 @@
-state,fusion_score,alert_level,confidence,domain_cdc,domain_nida,domain_trends,domain_census
-KS,0.2862,LOW,0.611,0.1375,0.3672,0.3641,0.5262
+state,fusion_score,alert_level,confidence,domain_cdc,domain_nida,domain_census
+KS,0.2751,LOW,0.308,0.1375,0.3672,0.5262
