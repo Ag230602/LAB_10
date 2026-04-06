@@ -6,6 +6,13 @@ This starter kit is built for the UMKC NSF NRT AI challenge on substance abuse r
 ## Detailed guide
 - Full explanation of outputs + what the app is doing: [docs/RESULTS_AND_APP_EXPLAINED.md](docs/RESULTS_AND_APP_EXPLAINED.md)
 
+## Dataset information / access
+- Core overdose time series and context are pulled dynamically at runtime from public APIs (CDC Socrata, U.S. Census, and NIDA/SAMHSA-style sources) using the clients in `src/data_sources/` — you do **not** need to download large raw datasets into the repo.
+- The pipeline writes all processed, analysis-ready tables into [data/cache](data/cache) (for example, `overdose_ts_{STATE}.csv`, `risk_{STATE}.csv`, `fusion_{STATE}.csv`, `anomalies_{STATE}.csv`).
+- If you need to reproduce or inspect inputs, see [config/data_endpoints.md](config/data_endpoints.md) for endpoint details and then run the pipeline for your state(s) of interest.
+- Optional Reddit and Google Trends features require your own API credentials (see **Environment variables** below); by default, only privacy-safe, aggregated features are cached.
+- Optional video signals are computed from local files you provide via `--video-paths`; only window-level, non-identifying metrics are written to [data/cache](data/cache), and no raw video is stored in the project.
+
 ### What it does
 - Pulls overdose and public-health signals from the **CDC Socrata API**
 - Pulls demographic context from the **U.S. Census API**
@@ -169,6 +176,14 @@ Dasboard:https://4cjvnamxvvou8pzbavfila.streamlit.app/
 5. Show graph nodes and edges
 6. Forecast near-term risk
 7. Show one intervention slider in Streamlit
+
+## Documentation of models, outputs, and demo steps
+- **Models and methods**: Forecasting, anomaly detection, fusion, and policy simulation live under [src/models](src/models), with risk scoring and multimodal feature construction in [src/features](src/features). The early warning score (EWS) and fusion logic are implemented so they can be reused in other apps or notebooks.
+- **Outputs**: All pipeline artifacts are written as CSV/JSON files under [data/cache](data/cache). A detailed “output dictionary” and interpretation guide is in [docs/RESULTS_AND_APP_EXPLAINED.md](docs/RESULTS_AND_APP_EXPLAINED.md).
+- **End-to-end demo**:
+    - Run a state-level pipeline, e.g. `python -m apps.pipeline --state KS --use-reddit false --use-trends false --horizon 12 --snapshots 6`.
+    - Inspect generated files in [data/cache](data/cache) (risk snapshot, forecast, anomalies, graphs, narrative).
+    - Launch the dashboard with `streamlit run apps/dashboard.py` and walk through the Overview → Temporal → Forecast → Anomalies → Policy Simulation → Narrative tabs to tell the story of recent risk and projected change.
 
 ## Notes
 - This template is intentionally lightweight and storage-friendly.
