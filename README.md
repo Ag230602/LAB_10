@@ -145,8 +145,8 @@ PYTHONPATH=. python scripts/run_pipeline.py --state KS --use-reddit false --use-
 ```bash
 streamlit run apps/dashboard.py
 
-# Legacy wrapper (still supported)
-streamlit run scripts/app.py
+Dasboard:https://4cjvnamxvvou8pzbavfila.streamlit.app/
+
 ```
 
 ## Recommended build path
