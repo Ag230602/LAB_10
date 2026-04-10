@@ -2,9 +2,14 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
-from dotenv import load_dotenv
 
-load_dotenv()
+try:
+    from dotenv import load_dotenv  # type: ignore
+
+    load_dotenv()
+except Exception:
+    # `python-dotenv` is optional. The system works with plain environment variables.
+    pass
 
 
 @dataclass(frozen=True)

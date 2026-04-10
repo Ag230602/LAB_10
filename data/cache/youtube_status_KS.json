@@ -1,0 +1,12 @@
+{
+  "use_youtube": true,
+  "n_urls": 1,
+  "error": "",
+  "languages": [
+    "en"
+  ],
+  "max_segments": 400,
+  "transcript_api_available": true,
+  "errors": [],
+  "semantic_method": "tfidf"
+}

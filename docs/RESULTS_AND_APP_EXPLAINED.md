@@ -187,9 +187,11 @@ Below is a practical “output dictionary”. Each file is named by state (e.g.,
 **What it is:** node list export of the state’s knowledge graph.
 
 **Typical columns:**
-- `node_id` / `id`: node identifier
-- `type`: category (e.g., State, Signal, Substance, Policy)
-- Additional attributes (values, timestamps)
+- `node`: node identifier used by edges
+- `node_type`: category (e.g., `location`, `event`, `risk_score`, `context`)
+- `label`: human-readable label for display
+- `risk_score`: optional scalar used for sizing/importance in the dashboard
+- `color`: hex color used by the dashboard visualization
 
 **How to interpret:**
 - Nodes represent concepts and measured signals.
@@ -304,6 +306,15 @@ Below is a practical “output dictionary”. Each file is named by state (e.g.,
 - High low_light_frac indicates poor lighting.
 - High anomaly_score indicates “something changed” relative to baseline windows.
 
+#### `video_status_{STATE}.json`
+**What it is:** lightweight metadata about the last attempted video-processing step for that state.
+
+**Why it exists:** lets the dashboard distinguish:
+- video disabled (default)
+- video enabled but missing `--video-paths`
+- video enabled but failed (e.g., OpenCV missing)
+- video enabled and ran but produced 0 windows
+
 ---
 
 ### 4.10 Narrative outputs
@@ -362,7 +373,8 @@ streamlit run apps/dashboard.py
 - Plots observed `value` and `anomaly_score` from `anomalies_{STATE}.csv`.
 
 #### Knowledge Graph
-- Shows nodes and edges tables.
+- Shows an interactive graph visualization (nodes + edges) with relation/weight filters.
+- Node/edge tables remain available in an expander for debugging/export.
 
 #### Policy Simulation
 - Shows `policy_compare_{STATE}.csv` if present (requires pipeline run with policy simulation enabled).
@@ -370,6 +382,7 @@ streamlit run apps/dashboard.py
 #### Video
 - If `video_windows_{STATE}.csv` exists, plots the chosen window metrics.
 - If not present, it explains how to enable video mode.
+- If `video_status_{STATE}.json` exists, the dashboard shows more specific guidance (missing OpenCV, missing paths, etc.).
 
 #### Narrative
 - Loads and renders `narrative_{STATE}.json` into a human-friendly view.
@@ -411,6 +424,7 @@ This project is designed to align with “population-level, non-identifying” c
 
 ### “No video outputs”
 - You didn’t run with `--use-video true` and `--video-paths ...`, or OpenCV isn’t installed.
+- If present, check `data/cache/video_status_{STATE}.json` for the exact error (e.g., missing `opencv-python`).
 
 ### “No Reddit outputs”
 - You didn’t run with `--use-reddit true`, or credentials aren’t set.

@@ -10,7 +10,9 @@ Backwards compatible wrapper exists at `scripts/run_pipeline.py`.
 
 import argparse
 import json
+import re
 from datetime import datetime, timezone
+from urllib.parse import urlparse
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -83,6 +85,30 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--use-reddit", type=str, default="false")
     parser.add_argument("--use-trends", type=str, default="false")
     parser.add_argument(
+        "--use-youtube",
+        type=str,
+        default="false",
+        help="If true, extracts text-based signals from YouTube transcripts (no video download).",
+    )
+    parser.add_argument(
+        "--youtube-urls",
+        type=str,
+        default="",
+        help="Comma-separated list of YouTube video URLs to analyze via transcript.",
+    )
+    parser.add_argument(
+        "--youtube-languages",
+        type=str,
+        default="en",
+        help="Comma-separated language codes to try for transcripts (e.g., en,en-US).",
+    )
+    parser.add_argument(
+        "--youtube-max-segments",
+        type=int,
+        default=400,
+        help="Max transcript segments to score per YouTube video.",
+    )
+    parser.add_argument(
         "--use-video",
         type=str,
         default="false",
@@ -93,6 +119,21 @@ def parse_args() -> argparse.Namespace:
         type=str,
         default="",
         help="Comma-separated list of local video file paths (mp4, mov, etc).",
+    )
+    parser.add_argument(
+        "--allow-remote-video",
+        type=str,
+        default="false",
+        help=(
+            "If true, allows http(s) URLs in --video-paths and downloads them before processing. "
+            "Only direct file URLs are supported (e.g., https://.../clip.mp4)."
+        ),
+    )
+    parser.add_argument(
+        "--remote-video-max-mb",
+        type=int,
+        default=500,
+        help="Maximum size (MB) allowed for a remote video download.",
     )
     parser.add_argument(
         "--save-reddit-raw",
@@ -113,12 +154,84 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def _is_http_url(s: str) -> bool:
+    try:
+        u = urlparse(s)
+        return u.scheme in {"http", "https"} and bool(u.netloc)
+    except Exception:
+        return False
+
+
+def _safe_filename_from_url(url: str) -> str:
+    u = urlparse(url)
+    name = Path(u.path).name or "remote_video"
+    name = re.sub(r"[^A-Za-z0-9._-]+", "_", name)
+    if len(name) > 120:
+        name = name[:120]
+    return name
+
+
+def _download_remote_video(
+    url: str,
+    *,
+    out_dir: Path,
+    max_mb: int,
+) -> Path:
+    """Download a remote video file to a local path.
+
+    Notes
+    -----
+    - Intended for direct file URLs (e.g. .mp4 served over https).
+    - Will reject obvious non-video responses (HTML pages, etc.).
+    """
+    import requests
+
+    out_dir.mkdir(parents=True, exist_ok=True)
+    fname = _safe_filename_from_url(url)
+    out_path = out_dir / fname
+
+    # Stream download with basic size checks.
+    with requests.get(url, stream=True, timeout=60) as r:
+        r.raise_for_status()
+
+        ctype = (r.headers.get("Content-Type") or "").lower()
+        if "text/html" in ctype:
+            raise RuntimeError(
+                "Remote URL returned HTML, not a video file. "
+                "Only direct video file URLs are supported (e.g., https://.../clip.mp4)."
+            )
+
+        clen = r.headers.get("Content-Length")
+        if clen:
+            try:
+                n_bytes = int(clen)
+                if n_bytes > max_mb * 1024 * 1024:
+                    raise RuntimeError(f"Remote video too large ({n_bytes/1024/1024:.1f} MB > {max_mb} MB).")
+            except ValueError:
+                pass
+
+        max_bytes = max_mb * 1024 * 1024
+        written = 0
+        with open(out_path, "wb") as f:
+            for chunk in r.iter_content(chunk_size=1024 * 1024):
+                if not chunk:
+                    continue
+                f.write(chunk)
+                written += len(chunk)
+                if written > max_bytes:
+                    raise RuntimeError(f"Remote video exceeded size limit ({max_mb} MB).")
+
+    return out_path
+
+
 def main() -> None:
     args = parse_args()
     state_abbr = args.state.upper()
     use_reddit = args.use_reddit.lower() == "true"
     use_trends = args.use_trends.lower() == "true"
     use_video = args.use_video.lower() == "true"
+    use_youtube = args.use_youtube.lower() == "true"
+    allow_remote_video = args.allow_remote_video.lower() == "true"
     simulate_policy = args.simulate_policy.lower() == "true"
     save_reddit_raw = args.save_reddit_raw.lower() == "true"
     reddit_include_post_id = args.reddit_include_post_id.lower() == "true"
@@ -126,6 +239,11 @@ def main() -> None:
     video_paths: List[str] = []
     if args.video_paths.strip():
         video_paths = [p.strip() for p in args.video_paths.split(",") if p.strip()]
+
+    youtube_urls: List[str] = []
+    if args.youtube_urls.strip():
+        youtube_urls = [u.strip() for u in args.youtube_urls.split(",") if u.strip()]
+    youtube_languages = [l.strip() for l in str(args.youtube_languages or "en").split(",") if l.strip()]
 
     states: List[str]
     if args.states.strip():
@@ -214,8 +332,6 @@ def main() -> None:
 
         # ── Reddit / social signals ───────────────────────────────────────
         reddit_df = pd.DataFrame(columns=["title", "selftext"])  # default empty
-        social_summary: Dict[str, float] = {}
-        semantic_summary: Dict[str, float] = {}
         semantic_method = ""
         if use_reddit:
             reddit_df = reddit.search_posts(
@@ -252,7 +368,7 @@ def main() -> None:
                     export_cols = [c for c in export_cols if c != "id"]
 
                 reddit_df[export_cols].to_csv(out_dir / f"reddit_{state}.csv", index=False)
-                social_summary = aggregate_signal(reddit_df)
+                # NOTE: social summaries are computed later (after optional YouTube transcript scoring)
 
                 # Method comparison (lexicon vs semantic) – aggregates only.
                 compare = {
@@ -268,6 +384,43 @@ def main() -> None:
                 }
                 pd.DataFrame([compare]).to_csv(out_dir / f"reddit_method_compare_{state}.csv", index=False)
 
+        # ── YouTube transcript signals (optional, no video download) ─────
+        youtube_scored_df = pd.DataFrame()
+        youtube_status: Dict[str, object] = {
+            "use_youtube": bool(use_youtube),
+            "n_urls": int(len(youtube_urls)),
+            "error": "",
+        }
+        if use_youtube:
+            if not youtube_urls:
+                youtube_status["error"] = "No YouTube URLs provided (pass --youtube-urls)."
+            else:
+                try:
+                    from src.video.youtube_signals import extract_youtube_transcript_signals
+
+                    yt_res = extract_youtube_transcript_signals(
+                        youtube_urls,
+                        languages=youtube_languages or ["en"],
+                        max_segments=int(args.youtube_max_segments),
+                        include_text=False,
+                    )
+                    youtube_status.update(yt_res.status)
+                    youtube_status["semantic_method"] = yt_res.semantic_method
+
+                    yt_per_video = yt_res.per_video.copy()
+                    yt_per_video.to_csv(out_dir / f"youtube_{state}.csv", index=False)
+
+                    youtube_scored_df = yt_res.per_segment.copy()
+
+                except Exception as exc:
+                    youtube_status["error"] = str(exc)
+
+            try:
+                with open(out_dir / f"youtube_status_{state}.json", "w", encoding="utf-8") as f:
+                    json.dump(youtube_status, f, indent=2)
+            except Exception as exc:
+                print(f"Could not write YouTube status metadata: {exc}")
+
         # ── Google Trends ────────────────────────────────────────────────
         trends_df = pd.DataFrame()
         trend_summary: Dict[str, float] = {}
@@ -281,29 +434,126 @@ def main() -> None:
                         float(pd.to_numeric(sub["mean_interest"], errors="coerce").mean()) if not sub.empty else 0.0
                     )
 
+        # ── Social fusion frame (Reddit + optional YouTube transcript) ───
+        social_frames: List[pd.DataFrame] = []
+        social_cols = [
+            "substance_score",
+            "distress_score",
+            "urgency_score",
+            "composite_risk",
+            "semantic_substance_score",
+            "semantic_distress_score",
+            "semantic_help_seeking_score",
+            "semantic_composite_risk",
+        ]
+        if not reddit_df.empty:
+            present_cols = [c for c in social_cols if c in reddit_df.columns]
+            if present_cols:
+                social_frames.append(pd.DataFrame(reddit_df.loc[:, list(present_cols)]))
+        if not youtube_scored_df.empty:
+            present_cols = [c for c in social_cols if c in youtube_scored_df.columns]
+            if present_cols:
+                social_frames.append(pd.DataFrame(youtube_scored_df.loc[:, list(present_cols)]))
+
+        social_for_fusion = pd.concat(social_frames, ignore_index=True) if social_frames else pd.DataFrame()
+        social_summary = aggregate_signal(social_for_fusion) if not social_for_fusion.empty else {}
+        semantic_summary = aggregate_semantic_signal(social_for_fusion) if not social_for_fusion.empty else {}
+
         # ── Fusion & EWS ─────────────────────────────────────────────────
         sig_dict = build_signal_dict(
             cdc_df=county_df,
             nida_df=nida_df,
             census_df=census_ctx,
-            reddit_df=reddit_df,
+            reddit_df=social_for_fusion if not social_for_fusion.empty else None,
             trends_df=trends_df,
         )
 
         # ── Video behavioral signals (optional) ───────────────────────────
         video_window_df = pd.DataFrame()
         video_summary: Dict[str, float] = {}
-        if use_video and video_paths:
+        video_status: Dict[str, object] = {
+            "use_video": bool(use_video),
+            "n_paths": int(len(video_paths)),
+            "allow_remote_video": bool(allow_remote_video),
+            "processed": False,
+            "n_windows": 0,
+            "wrote_windows_csv": False,
+            "error": "",
+        }
+
+        if use_video:
+            if not video_paths:
+                video_status["error"] = "No video paths provided (pass --video-paths)."
+            else:
+                try:
+                    # Resolve remote URLs into downloaded local files (optional).
+                    resolved_paths: List[str] = []
+                    downloaded: List[str] = []
+                    for vp in video_paths:
+                        if _is_http_url(vp):
+                            if not allow_remote_video:
+                                raise RuntimeError(
+                                    "Remote video URL provided but --allow-remote-video is false. "
+                                    "Re-run with --allow-remote-video true and use a direct video file URL."
+                                )
+                            local = _download_remote_video(
+                                vp,
+                                out_dir=Path("data/cache") / "_remote_videos" / state,
+                                max_mb=int(args.remote_video_max_mb),
+                            )
+                            resolved_paths.append(str(local))
+                            downloaded.append(vp)
+                        else:
+                            resolved_paths.append(vp)
+
+                    video_status["resolved_paths"] = resolved_paths
+                    if downloaded:
+                        video_status["downloaded_urls"] = downloaded
+
+                    video_window_df, video_summary = extract_multi_video_signals(resolved_paths)
+                    video_status["processed"] = True
+                    video_status["n_windows"] = int(len(video_window_df))
+
+                    # Always write a readable CSV if video was attempted so the dashboard can tell
+                    # "ran but zero windows" apart from "not enabled".
+                    video_out = out_dir / f"video_windows_{state}.csv"
+                    expected_cols = [
+                        "video_name",
+                        "window_index",
+                        "start_sec",
+                        "end_sec",
+                        "activity_mean",
+                        "activity_std",
+                        "anomaly_score",
+                        "low_light_frac",
+                        "scene_change_rate",
+                    ]
+                    if video_window_df.empty:
+                        pd.DataFrame(columns=expected_cols).to_csv(video_out, index=False)
+                    else:
+                        # Ensure stable column ordering if possible.
+                        for c in expected_cols:
+                            if c not in video_window_df.columns:
+                                video_window_df[c] = None
+                        video_window_df[expected_cols].to_csv(video_out, index=False)
+
+                    video_status["wrote_windows_csv"] = True
+
+                    # Add summary scalars to fusion/EWS inputs
+                    for k, v in video_summary.items():
+                        if k.startswith("video_"):
+                            sig_dict[k] = float(v)
+                except Exception as exc:
+                    msg = str(exc)
+                    video_status["error"] = msg
+                    print(f"Video processing skipped/failed: {msg}")
+
+            # Write status metadata regardless of success.
             try:
-                video_window_df, video_summary = extract_multi_video_signals(video_paths)
-                if not video_window_df.empty:
-                    video_window_df.to_csv(out_dir / f"video_windows_{state}.csv", index=False)
-                # Add summary scalars to fusion/EWS inputs
-                for k, v in video_summary.items():
-                    if k.startswith("video_"):
-                        sig_dict[k] = float(v)
+                with open(out_dir / f"video_status_{state}.json", "w", encoding="utf-8") as f:
+                    json.dump(video_status, f, indent=2)
             except Exception as exc:
-                print(f"Video processing skipped/failed: {exc}")
+                print(f"Could not write video status metadata: {exc}")
 
         # add explicitly computed signals
         sig_dict["trend_velocity"] = trend_velocity

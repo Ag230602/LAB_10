@@ -1,2 +1,2 @@
 state,trend_velocity,distress_mentions,substance_mentions,opioid_misuse_pct,social_composite,semantic_social_composite,trends_interest,poverty_rate_pct,overdose_rate_per_100k,video_activity_mean,video_anomaly_score,video_low_light_frac,video_scene_change_rate,ews_mortality,ews_substance,ews_social,ews_trends,ews_socioeconomic,ews,ews_alert_level
-KS,0.3333333333333333,0.0,0.0,4.0,0.0,0.0,0.0,11.523906119151173,126.0,0.0,0.0,0.0,0.0,0.4133,0.2222,0.0,0.0,0.5238,0.2581,LOW
+KS,0.3333333333333333,0.01078167115902965,0.06407232704402516,4.0,0.011899838274932616,0.01019245283018868,0.0,11.523906119151173,126.0,0.0,0.0,0.0,0.0,0.4133,0.2286,0.008,0.0,0.5238,0.2613,LOW

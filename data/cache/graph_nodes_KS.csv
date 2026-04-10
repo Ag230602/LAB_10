@@ -1,6 +1,7 @@
 node,node_type,label,risk_score,color
-KS,location,KS,0.2581,#4e79a7
+KS,location,KS,0.2613,#4e79a7
 KS_overdose,event,Overdose Deaths,0.252,#76b7b2
-KS_ews,risk_score,EWS,0.2581,#e15759
+KS_ews,risk_score,EWS,0.2613,#e15759
 KS_income,demographic,Median Income,0.526,#9c755f
 KS_nida,context,NIDA/SAMHSA,0.51,#59a14f
+KS_social,social,Social Signals,0.012,#edc948

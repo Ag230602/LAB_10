@@ -1,0 +1,9 @@
+{
+  "use_video": true,
+  "n_paths": 1,
+  "allow_remote_video": false,
+  "processed": false,
+  "n_windows": 0,
+  "wrote_windows_csv": false,
+  "error": "Remote video URL provided but --allow-remote-video is false. Re-run with --allow-remote-video true and use a direct video file URL."
+}
